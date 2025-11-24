@@ -1,12 +1,17 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Projects from './pages/Projects';
-import Employees from './pages/Employees';
-import Evaluations from './pages/Evaluations';
-import Clubs from './pages/Clubs';
-import ClubDetail from './pages/ClubDetail';
-import ProjectDetail from './pages/ProjectDetail';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import Layout from "./components/Layout";
+import Dashboard from "./pages/Dashboard";
+import Projects from "./pages/Projects";
+import Employees from "./pages/Employees";
+import Evaluations from "./pages/Evaluations";
+import Clubs from "./pages/Clubs";
+import ClubDetail from "./pages/ClubDetail";
+import ProjectDetail from "./pages/ProjectDetail";
 
 function App() {
   return (
