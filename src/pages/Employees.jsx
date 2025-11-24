@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Search,
   Filter,
@@ -6,13 +6,13 @@ import {
   MoreVertical,
   Mail,
   Phone,
-  Code,
+  Check,
   Briefcase,
+  X,
 } from "lucide-react";
 
 const Employees = () => {
   // Mock Data matching EmployeeDetailResponse DTO structure
-  // Using ID mappings for Dept, Position, Status to simulate real backend data
   const employeesData = [
     {
       empNo: 101,
@@ -82,7 +82,7 @@ const Employees = () => {
     },
   ];
 
-  // Helper maps for IDs (In a real app, these might come from other APIs)
+  // Helper maps
   const DEPARTMENTS = { 1: "DX솔루션 1팀", 2: "AI 연구소" };
   const POSITIONS = { 1: "사원", 2: "대리", 3: "과장", 4: "팀장" };
   const STATUSES = { 1: "재직", 2: "휴직", 3: "퇴사" };
@@ -92,14 +92,45 @@ const Employees = () => {
     3: "bg-red-100 text-red-700",
   };
 
+  // Extract all unique skills for the filter list
+  const allSkills = useMemo(() => {
+    const skills = new Set();
+    employeesData.forEach((emp) => {
+      emp.skills.forEach((s) => skills.add(s.skillName));
+    });
+    return Array.from(skills).sort();
+  }, []);
+
   // Filter States
   const [searchTerm, setSearchTerm] = useState("");
-  const [skillFilter, setSkillFilter] = useState("");
+  const [selectedSkills, setSelectedSkills] = useState([]); // Multi-select
   const [minExpYears, setMinExpYears] = useState(0);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Toggle skill selection
+  const toggleSkill = (skillName) => {
+    setSelectedSkills((prev) =>
+      prev.includes(skillName)
+        ? prev.filter((s) => s !== skillName)
+        : [...prev, skillName]
+    );
+  };
+
+  // Get color intensity based on experience years (GitHub contribution style)
+  // Updated to match "Status" badge aesthetics (rounded-full, font-medium, softer colors)
+  const getSkillColorClass = (years) => {
+    const baseClasses = "px-2.5 py-1 text-xs font-medium rounded-full border transition-colors";
+
+    if (years >= 10) return `${baseClasses} bg-indigo-100 text-indigo-800 border-indigo-200`; // Expert
+    if (years >= 6) return `${baseClasses} bg-blue-100 text-blue-800 border-blue-200`; // Senior
+    if (years >= 3) return `${baseClasses} bg-sky-100 text-sky-800 border-sky-200`; // Mid
+    if (years >= 1) return `${baseClasses} bg-slate-100 text-slate-700 border-slate-200`; // Junior
+    return `${baseClasses} bg-gray-50 text-gray-600 border-gray-100`; // Entry
+  };
 
   // Filtering Logic
   const filteredEmployees = employeesData.filter((emp) => {
-    // 1. Basic Search (Name, Email, Dept Name)
+    // 1. Basic Search
     const deptName = DEPARTMENTS[emp.deptId] || "";
     const basicMatch =
       emp.employeeName.includes(searchTerm) ||
@@ -108,26 +139,31 @@ const Employees = () => {
 
     if (!basicMatch) return false;
 
-    // 2. Skill Filter
-    if (skillFilter) {
-      const hasSkill = emp.skills.some((skill) =>
-        skill.skillName.toLowerCase().includes(skillFilter.toLowerCase())
-      );
-      if (!hasSkill) return false;
-    }
+    // 2. Skill Filter (AND Condition) & Experience Filter
+    if (selectedSkills.length > 0) {
+      // Check if employee has ALL selected skills
+      const hasAllSkills = selectedSkills.every((selectedSkill) => {
+        const empSkill = emp.skills.find(
+          (s) => s.skillName === selectedSkill
+        );
+        // If employee doesn't have the skill, fail
+        if (!empSkill) return false;
 
-    // 3. Experience Filter
-    if (minExpYears > 0) {
-      const qualifyingSkills = emp.skills.filter((skill) => {
-        // If skill filter is active, only consider matching skills
-        if (skillFilter) {
-          return skill.skillName.toLowerCase().includes(skillFilter.toLowerCase());
+        // If employee has the skill, check experience requirement
+        if (minExpYears > 0 && empSkill.expYears < minExpYears) {
+          return false;
         }
         return true;
       });
 
-      const hasEnoughExp = qualifyingSkills.some((skill) => skill.expYears >= minExpYears);
-      if (!hasEnoughExp) return false;
+      if (!hasAllSkills) return false;
+    } else {
+      // If no skill selected but experience filter is set, check if ANY skill meets criteria
+      // (Optional behavior, but logical)
+      if (minExpYears > 0) {
+        const hasAnySkillWithExp = emp.skills.some(s => s.expYears >= minExpYears);
+        if (!hasAnySkillWithExp) return false;
+      }
     }
 
     return true;
@@ -165,43 +201,78 @@ const Employees = () => {
               />
             </div>
 
-            {/* Skill Filter */}
-            <div className="flex items-center gap-2 flex-1 max-w-md">
-              <div className="relative flex-1">
-                <Code
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={20}
-                />
-                <input
-                  type="text"
-                  placeholder="기술 스택 (예: Java)"
-                  value={skillFilter}
-                  onChange={(e) => setSkillFilter(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
-              </div>
-            </div>
+            {/* Filter Toggle Button */}
+            <button
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${isFilterOpen || selectedSkills.length > 0
+                  ? "bg-primary-50 border-primary-200 text-primary-700"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                }`}
+            >
+              <Filter size={20} />
+              <span>기술 필터</span>
+              {selectedSkills.length > 0 && (
+                <span className="ml-1 px-2 py-0.5 bg-primary-600 text-white text-xs rounded-full">
+                  {selectedSkills.length}
+                </span>
+              )}
+            </button>
           </div>
 
-          {/* Experience Slider */}
-          <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
-            <div className="flex items-center gap-2 text-gray-700 min-w-[100px]">
-              <Briefcase size={18} />
-              <span className="text-sm font-medium">최소 경력</span>
+          {/* Expanded Filter Panel */}
+          {(isFilterOpen || selectedSkills.length > 0) && (
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4 animate-in fade-in slide-in-from-top-2">
+              {/* Skill Selection */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700">보유 기술 선택 (다중 선택 가능)</span>
+                  {selectedSkills.length > 0 && (
+                    <button
+                      onClick={() => setSelectedSkills([])}
+                      className="text-xs text-gray-500 hover:text-red-600 flex items-center gap-1"
+                    >
+                      <X size={12} /> 초기화
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {allSkills.map((skill) => (
+                    <button
+                      key={skill}
+                      onClick={() => toggleSkill(skill)}
+                      className={`px-3 py-1.5 text-sm rounded-full border transition-all ${selectedSkills.includes(skill)
+                          ? "bg-primary-600 text-white border-primary-600 shadow-sm"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-primary-300 hover:bg-primary-50"
+                        }`}
+                    >
+                      {skill}
+                      {selectedSkills.includes(skill) && <Check size={12} className="inline ml-1" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Experience Slider */}
+              <div className="flex items-center gap-4 pt-2 border-t border-gray-200">
+                <div className="flex items-center gap-2 text-gray-700 min-w-[100px]">
+                  <Briefcase size={18} />
+                  <span className="text-sm font-medium">최소 경력</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="10"
+                  step="1"
+                  value={minExpYears}
+                  onChange={(e) => setMinExpYears(Number(e.target.value))}
+                  className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                />
+                <span className="text-sm font-bold text-primary-700 min-w-[60px] text-right">
+                  {minExpYears}년 +
+                </span>
+              </div>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="15"
-              step="1"
-              value={minExpYears}
-              onChange={(e) => setMinExpYears(Number(e.target.value))}
-              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
-            />
-            <span className="text-sm font-bold text-primary-700 min-w-[60px] text-right">
-              {minExpYears}년 이상
-            </span>
-          </div>
+          )}
         </div>
 
         <div className="overflow-x-auto">
@@ -237,16 +308,14 @@ const Employees = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1 max-w-xs">
+                      <div className="flex flex-wrap gap-2 max-w-xs">
                         {emp.skills.map((skill) => (
                           <span
                             key={skill.skillId}
-                            className={`px-2 py-0.5 text-xs rounded-full border ${skill.isPrimary
-                                ? "bg-primary-50 text-primary-700 border-primary-200 font-medium"
-                                : "bg-gray-50 text-gray-600 border-gray-200"
-                              }`}
+                            className={getSkillColorClass(skill.expYears)}
+                            title={`${skill.skillName}: ${skill.expYears}년 경력`}
                           >
-                            {skill.skillName} <span className="text-[10px] opacity-75">({skill.expYears}년)</span>
+                            {skill.skillName}
                           </span>
                         ))}
                         {emp.skills.length === 0 && (
