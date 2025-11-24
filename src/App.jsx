@@ -4,6 +4,8 @@ import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import Employees from './pages/Employees';
 import Evaluations from './pages/Evaluations';
+import Clubs from './pages/Clubs';
+import ClubDetail from './pages/ClubDetail';
 
 function App() {
   return (
@@ -15,6 +17,8 @@ function App() {
           <Route path="projects" element={<Projects />} />
           <Route path="employees" element={<Employees />} />
           <Route path="evaluations" element={<Evaluations />} />
+          <Route path="clubs" element={<Clubs />} />
+          <Route path="clubs/:id" element={<ClubDetail />} />
         </Route>
       </Routes>
     </Router>
