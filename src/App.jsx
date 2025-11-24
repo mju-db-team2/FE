@@ -6,6 +6,7 @@ import Employees from './pages/Employees';
 import Evaluations from './pages/Evaluations';
 import Clubs from './pages/Clubs';
 import ClubDetail from './pages/ClubDetail';
+import ProjectDetail from './pages/ProjectDetail';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="projects" element={<Projects />} />
+          <Route path="projects/:id" element={<ProjectDetail />} />
           <Route path="employees" element={<Employees />} />
           <Route path="evaluations" element={<Evaluations />} />
           <Route path="clubs" element={<Clubs />} />
