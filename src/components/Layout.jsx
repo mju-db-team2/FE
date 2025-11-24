@@ -69,6 +69,12 @@ const Layout = () => {
             active={location.pathname.startsWith("/employees")}
           />
           <SidebarItem
+            icon={Users}
+            label="동아리 관리"
+            to="/clubs"
+            active={location.pathname.startsWith("/clubs")}
+          />
+          <SidebarItem
             icon={ClipboardCheck}
             label="평가 관리"
             to="/evaluations"
