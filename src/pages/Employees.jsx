@@ -258,16 +258,26 @@ const Employees = () => {
                   <Briefcase size={18} />
                   <span className="text-sm font-medium">최소 경력</span>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="10"
-                  step="1"
-                  value={minExpYears}
-                  onChange={(e) => setMinExpYears(Number(e.target.value))}
-                  className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
-                />
-                <span className="text-sm font-bold text-primary-700 min-w-[60px] text-right">
+                <div className="flex-1 relative h-6 flex items-center">
+                  <div
+                    className="absolute w-full h-2 rounded-lg bg-gradient-to-r from-gray-200 via-primary-300 to-indigo-600"
+                  ></div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    step="1"
+                    value={minExpYears}
+                    onChange={(e) => setMinExpYears(Number(e.target.value))}
+                    className="w-full absolute h-2 opacity-0 cursor-pointer z-10"
+                  />
+                  <div
+                    className="absolute h-4 w-4 bg-white border-2 border-primary-600 rounded-full shadow-md pointer-events-none transition-all"
+                    style={{ left: `${(minExpYears / 10) * 100}%`, transform: `translateX(-${(minExpYears / 10) * 100}%)` }}
+                  ></div>
+                </div>
+                <span className={`text-sm font-bold min-w-[60px] text-right transition-colors ${minExpYears >= 6 ? "text-indigo-800" : minExpYears >= 3 ? "text-primary-600" : "text-gray-500"
+                  }`}>
                   {minExpYears}년 +
                 </span>
               </div>
