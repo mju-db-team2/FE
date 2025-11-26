@@ -1,5 +1,5 @@
-import React from "react";
-import { Users, Briefcase, CheckCircle, AlertCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Users, Briefcase, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 
 const StatCard = ({ title, value, icon: Icon, color, trend }) => (
   <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
@@ -12,7 +12,8 @@ const StatCard = ({ title, value, icon: Icon, color, trend }) => (
         <Icon className="w-6 h-6 text-white" />
       </div>
     </div>
-    {trend && (
+    {/* Trend is not in API yet, hiding or keeping static for now */}
+    {/* {trend && (
       <div className="mt-4 flex items-center text-sm">
         <span className={trend > 0 ? "text-green-600" : "text-red-600"}>
           {trend > 0 ? "+" : ""}
@@ -20,11 +21,61 @@ const StatCard = ({ title, value, icon: Icon, color, trend }) => (
         </span>
         <span className="text-gray-500 ml-2">vs last month</span>
       </div>
-    )}
+    )} */}
   </div>
 );
 
 const Dashboard = () => {
+  const [stats, setStats] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch("http://localhost:8080/api/projects/dashboard");
+        if (!response.ok) {
+          throw new Error("Failed to fetch dashboard stats");
+        }
+        const data = await response.json();
+        setStats(data);
+      } catch (err) {
+        console.error("Error fetching dashboard:", err);
+        setError("대시보드 정보를 불러오는데 실패했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-center text-red-500">
+        {error}
+      </div>
+    );
+  }
+
+  // Fallback if data is missing
+  const projectCountByStatus = stats?.projectCountByStatus || { PROGRESS: 0, WAIT: 0, END: 0 };
+  const totalProjects = stats?.totalProjects || 0;
+  const totalDevelopers = stats?.totalDevelopers || 0;
+
+  // Calculate a rough "utilization" or just show total developers
+  // Since we don't have utilization % from API, we can just show counts.
+
   return (
     <div className="space-y-6">
       <div>
@@ -37,105 +88,58 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="진행중 프로젝트"
-          value="12"
+          value={projectCountByStatus.PROGRESS}
           icon={Briefcase}
           color="bg-blue-500"
-          trend={8}
         />
         <StatCard
           title="전체 직원"
-          value="100"
+          value={totalDevelopers}
           icon={Users}
           color="bg-indigo-500"
-          trend={2}
         />
         <StatCard
-          title="프로젝트 투입률"
-          value="85%"
+          title="종료된 프로젝트"
+          value={projectCountByStatus.END}
           icon={CheckCircle}
           color="bg-green-500"
-          trend={5}
         />
         <StatCard
-          title="이슈 발생"
-          value="3"
+          title="대기중 프로젝트"
+          value={projectCountByStatus.WAIT}
           icon={AlertCircle}
-          color="bg-red-500"
-          trend={-12}
+          color="bg-yellow-500"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <h2 className="text-lg font-bold text-gray-900 mb-4">
-            최근 프로젝트 현황
+            프로젝트 상태 요약
           </h2>
           <div className="space-y-4">
-            {[
-              {
-                name: "삼성전자 차세대 ERP",
-                client: "삼성전자",
-                status: "PROGRESS",
-                progress: 75,
-              },
-              {
-                name: "네이버 AI 검색엔진 개선",
-                client: "네이버",
-                status: "PROGRESS",
-                progress: 45,
-              },
-              {
-                name: "현대차 자율주행 관제",
-                client: "현대자동차",
-                status: "WAIT",
-                progress: 0,
-              },
-              {
-                name: "카카오뱅크 챗봇 개발",
-                client: "카카오",
-                status: "END",
-                progress: 100,
-              },
-            ].map((project, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-              >
-                <div>
-                  <h3 className="font-medium text-gray-900">{project.name}</h3>
-                  <p className="text-sm text-gray-500">{project.client}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary-500 rounded-full"
-                      style={{ width: `${project.progress}%` }}
-                    />
-                  </div>
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      project.status === "PROGRESS"
-                        ? "bg-blue-100 text-blue-700"
-                        : project.status === "END"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {project.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <span className="font-medium text-gray-700">진행중 (Progress)</span>
+              <span className="font-bold text-blue-600">{projectCountByStatus.PROGRESS}건</span>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <span className="font-medium text-gray-700">대기중 (Wait)</span>
+              <span className="font-bold text-yellow-600">{projectCountByStatus.WAIT}건</span>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <span className="font-medium text-gray-700">종료 (End)</span>
+              <span className="font-bold text-green-600">{projectCountByStatus.END}건</span>
+            </div>
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">인력 가동률</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">인력 현황</h2>
           <div className="flex items-center justify-center h-64 text-gray-400">
-            {/* Chart placeholder */}
             <div className="text-center">
               <Users className="w-12 h-12 mx-auto mb-2 opacity-20" />
-              <p>차트 영역 (Recharts 연동 예정)</p>
+              <p className="text-lg font-medium text-gray-600">총 {totalDevelopers}명의 개발자</p>
+              <p className="text-sm">현재 시스템에 등록된 전체 인원입니다.</p>
             </div>
           </div>
         </div>
