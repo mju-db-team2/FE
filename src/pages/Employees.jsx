@@ -34,9 +34,18 @@ const Employees = () => {
     // Add default skills to ensure filter options exist even if employee list is empty or filtered out
     ["Java", "Python", "Spring Boot", "React", "MySQL", "JPA", "AWS", "Oracle", "JavaScript"].forEach(s => skills.add(s));
 
-    employees.forEach((emp) => {
-      emp.skills.forEach((s) => skills.add(s.skillName));
-    });
+    // Robust safety check: ensure employees is an array and each emp has skills
+    if (Array.isArray(employees)) {
+      employees.forEach((emp) => {
+        if (emp && Array.isArray(emp.skills)) {
+          emp.skills.forEach((s) => {
+            if (s && s.skillName) {
+              skills.add(s.skillName);
+            }
+          });
+        }
+      });
+    }
     return Array.from(skills).sort();
   }, [employees]);
 
@@ -52,13 +61,18 @@ const Employees = () => {
     setError(null);
     try {
       // API call to local server
+      // Server requires at least one skill. If none selected, send a default list to get initial data.
+      // Note: Backend uses AND condition, so we must send only ONE skill to get maximum results.
+      // Sending multiple skills (e.g. ["Java", "Python"]) would only return employees who have BOTH.
+      const DEFAULT_SKILLS = ["Java"];
+
       const response = await fetch("http://localhost:8080/employees/filter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          skillNames: selectedSkills.length > 0 ? selectedSkills : [],
+          skillNames: selectedSkills.length > 0 ? selectedSkills : DEFAULT_SKILLS,
           minExpYears: minExpYears,
         }),
       });
@@ -68,10 +82,13 @@ const Employees = () => {
       }
 
       const data = await response.json();
-      setEmployees(data);
+      // Handle response structure: check if data is directly an array or wrapped in { data: [...] }
+      const employeeList = Array.isArray(data) ? data : (data.data || []);
+      setEmployees(employeeList);
     } catch (err) {
       console.error("Error fetching employees:", err);
-      setError("데이터를 불러오는데 실패했습니다. 서버 상태를 확인해주세요.");
+      // If server returns 500 because of empty skills, just show empty list or handle gracefully
+      setError("데이터를 불러오는데 실패했습니다. (서버 응답 오류)");
       setEmployees([]);
     } finally {
       setIsLoading(false);
@@ -106,12 +123,18 @@ const Employees = () => {
   // Client-side filtering for Search Term (Name, Dept, Email)
   // The API handles skills and experience, but basic search is often client-side for speed
   // or can be added to API if supported. Here we filter the *result* from API.
-  const filteredEmployees = employees.filter((emp) => {
+  const filteredEmployees = (employees || []).filter((emp) => {
+    if (!emp) return false; // Skip null/undefined employees
+
     const deptName = DEPARTMENTS[emp.deptId] || "";
+    // Safety check: emp.employeeName might be null
+    const name = emp.employeeName || "";
+    const email = emp.employeeEmail || "";
+
     const basicMatch =
-      emp.employeeName.includes(searchTerm) ||
+      name.includes(searchTerm) ||
       deptName.includes(searchTerm) ||
-      emp.employeeEmail.includes(searchTerm);
+      email.includes(searchTerm);
 
     return basicMatch;
   });
@@ -128,6 +151,22 @@ const Employees = () => {
           <span>직원 등록</span>
         </button>
       </div>
+
+      {/* Info Alert for Default Filter */}
+      {selectedSkills.length === 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+          <div className="p-1 bg-blue-100 rounded-full text-blue-600 mt-0.5">
+            <Check size={14} />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-blue-900">추천 인재 목록 (Java)</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              현재 가장 수요가 많은 <strong>Java</strong> 기술 보유 인재를 우선적으로 표시합니다.
+              원하시는 기술 스택이 있다면 필터를 통해 검색해주세요.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {/* Filter Section */}
@@ -152,8 +191,8 @@ const Employees = () => {
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
               className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${isFilterOpen || selectedSkills.length > 0
-                  ? "bg-primary-50 border-primary-200 text-primary-700"
-                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                ? "bg-primary-50 border-primary-200 text-primary-700"
+                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                 }`}
             >
               <Filter size={20} />
@@ -188,8 +227,8 @@ const Employees = () => {
                       key={skill}
                       onClick={() => toggleSkill(skill)}
                       className={`px-3 py-1.5 text-sm rounded-full border transition-all ${selectedSkills.includes(skill)
-                          ? "bg-primary-600 text-white border-primary-600 shadow-sm"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-primary-300 hover:bg-primary-50"
+                        ? "bg-primary-600 text-white border-primary-600 shadow-sm"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-primary-300 hover:bg-primary-50"
                         }`}
                     >
                       {skill}
@@ -266,10 +305,10 @@ const Employees = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-xs">
-                          {emp.employeeName[0]}
+                          {emp.employeeName?.[0] || "?"}
                         </div>
                         <span className="font-medium text-gray-900">
-                          {emp.employeeName}
+                          {emp.employeeName || "이름없음"}
                         </span>
                       </div>
                     </td>
@@ -281,7 +320,7 @@ const Employees = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-2 max-w-xs">
-                        {emp.skills.map((skill, idx) => (
+                        {emp.skills?.map((skill, idx) => (
                           <span
                             key={idx}
                             className={getSkillColorClass(skill.expYears)}
@@ -290,7 +329,7 @@ const Employees = () => {
                             {skill.skillName}
                           </span>
                         ))}
-                        {emp.skills.length === 0 && (
+                        {(!emp.skills || emp.skills.length === 0) && (
                           <span className="text-gray-400 text-xs">-</span>
                         )}
                       </div>
@@ -298,10 +337,10 @@ const Employees = () => {
                     <td className="px-6 py-4 text-gray-600">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2 text-xs">
-                          <Mail size={12} /> {emp.employeeEmail}
+                          <Mail size={12} /> {emp.employeeEmail || "-"}
                         </div>
                         <div className="flex items-center gap-2 text-xs">
-                          <Phone size={12} /> {emp.employeePhone}
+                          <Phone size={12} /> {emp.employeePhone || "-"}
                         </div>
                       </div>
                     </td>
