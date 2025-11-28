@@ -91,7 +91,6 @@ const Projects = () => {
         endDate: "",
         status: "WAIT"
       });
-      alert("프로젝트가 성공적으로 생성되었습니다.");
     } catch (err) {
       console.error("Error creating project:", err);
       alert("프로젝트 생성에 실패했습니다.");
