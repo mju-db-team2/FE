@@ -184,15 +184,22 @@ const ProjectDetail = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">역할 ID (Role ID)</label>
-                <input
-                  type="number"
+                <label className="block text-sm font-medium text-gray-700 mb-1">역할 (Role)</label>
+                <select
                   required
                   value={newAssignment.roleId}
                   onChange={(e) => setNewAssignment({ ...newAssignment, roleId: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="예: 601 (PM), 602 (PL)"
-                />
+                >
+                  <option value="">역할 선택</option>
+                  <option value="601">PM (Project Manager)</option>
+                  <option value="602">PL (Project Leader)</option>
+                  <option value="603">AA (Application Architect)</option>
+                  <option value="604">TA (Technical Architect)</option>
+                  <option value="605">DA (Data Architect)</option>
+                  <option value="606">BA (Business Architect)</option>
+                  <option value="607">Developer</option>
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -217,18 +224,25 @@ const ProjectDetail = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">참여율 (Allocation 0.0 ~ 1.0)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  참여율: {(newAssignment.allocation * 100).toFixed(0)}%
+                </label>
                 <input
-                  type="number"
-                  step="0.1"
+                  type="range"
                   min="0"
                   max="1"
-                  required
+                  step="0.1"
                   value={newAssignment.allocation}
                   onChange={(e) => setNewAssignment({ ...newAssignment, allocation: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                 />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>0%</span>
+                  <span>50%</span>
+                  <span>100%</span>
+                </div>
               </div>
+
               <div className="flex justify-end gap-2 mt-6">
                 <button
                   type="button"
@@ -246,7 +260,7 @@ const ProjectDetail = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div >
       )}
 
       <div>
@@ -271,35 +285,37 @@ const ProjectDetail = () => {
       </div>
 
       {/* Statistics Section */}
-      {statistics && statistics.roles && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">역할별 투입 현황</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {statistics.roles.map((stat, idx) => {
-              const avgAllocation = stat.totalAllocation / stat.headcount;
-              return (
-                <div key={idx} className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium text-gray-700">{getRoleName(stat.roleId)}</span>
-                    <span className="text-xs bg-white border px-2 py-0.5 rounded-full text-gray-500">
-                      {stat.headcount}명
-                    </span>
+      {
+        statistics && statistics.roles && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">역할별 투입 현황</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {statistics.roles.map((stat, idx) => {
+                const avgAllocation = stat.totalAllocation / stat.headcount;
+                return (
+                  <div key={idx} className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-gray-700">{getRoleName(stat.roleId)}</span>
+                      <span className="text-xs bg-white border px-2 py-0.5 rounded-full text-gray-500">
+                        {stat.headcount}명
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div
+                        className="bg-primary-600 h-2.5 rounded-full"
+                        style={{ width: `${(avgAllocation * 100).toFixed(0)}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-right mt-1 text-xs text-gray-500">
+                      평균 참여율: {(avgAllocation * 100).toFixed(1)}%
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div
-                      className="bg-primary-600 h-2.5 rounded-full"
-                      style={{ width: `${(avgAllocation * 100).toFixed(0)}%` }}
-                    ></div>
-                  </div>
-                  <div className="text-right mt-1 text-xs text-gray-500">
-                    평균 참여율: {(avgAllocation * 100).toFixed(1)}%
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
@@ -354,7 +370,7 @@ const ProjectDetail = () => {
           </table>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

@@ -22,27 +22,8 @@ const Projects = () => {
   );
 
   // Fetch Projects from API
-  useEffect(() => {
-    const fetchProjects = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch("http://localhost:8080/api/projects");
-        if (!response.ok) {
-          throw new Error("Failed to fetch projects");
-        }
-        const data = await response.json();
-        setProjects(data);
-      } catch (err) {
-        console.error("Error fetching projects:", err);
-        setError("프로젝트 목록을 불러오는데 실패했습니다.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Removed useEffect that contained fetchProjects
 
-    fetchProjects();
-  }, []);
 
   const filteredProjects = useMemo(() => {
     if (activeTab === "ALL") return projects;
@@ -51,13 +32,36 @@ const Projects = () => {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newProject, setNewProject] = useState({
-    clientId: 201, // Default client ID as we don't have a client list API
+    clientId: 201,
+    clientName: "", // Added clientName
     projectCode: "",
     projectName: "",
     startDate: "",
     endDate: "",
     status: "WAIT"
   });
+
+  const fetchProjects = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("http://localhost:8080/api/projects");
+      if (!response.ok) {
+        throw new Error("Failed to fetch projects");
+      }
+      const data = await response.json();
+      setProjects(data);
+    } catch (err) {
+      console.error("Error fetching projects:", err);
+      setError("프로젝트 목록을 불러오는데 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
 
   const handleCreateProject = async (e) => {
     e.preventDefault();
@@ -80,6 +84,7 @@ const Projects = () => {
       // Reset form
       setNewProject({
         clientId: 201,
+        clientName: "",
         projectCode: "",
         projectName: "",
         startDate: "",
@@ -135,6 +140,17 @@ const Projects = () => {
                   onChange={(e) => setNewProject({ ...newProject, projectName: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg"
                   placeholder="프로젝트 이름"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">발주처</label>
+                <input
+                  type="text"
+                  required
+                  value={newProject.clientName}
+                  onChange={(e) => setNewProject({ ...newProject, clientName: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="예: 삼성전자"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
