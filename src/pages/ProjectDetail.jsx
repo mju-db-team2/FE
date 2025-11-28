@@ -2,6 +2,20 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Briefcase, Users, User, ArrowLeft, Loader2, UserPlus } from "lucide-react";
 
+// Role ID to Name mapping
+const getRoleName = (roleId) => {
+  const roleMap = {
+    601: "PM",
+    602: "PL",
+    603: "AA",
+    604: "TA",
+    605: "DA",
+    606: "BA",
+    607: "Developer"
+  };
+  return roleMap[roleId] || `Role ${roleId}`;
+};
+
 const ProjectDetail = () => {
   const { id } = useParams();
   const projectId = Number(id);
@@ -242,6 +256,12 @@ const ProjectDetail = () => {
             <Briefcase size={16} />
             <span>{projectInfo.projectCode}</span>
           </div>
+          {projectInfo.clientName && (
+            <div className="flex items-center gap-1">
+              <User size={16} />
+              <span>발주처: {projectInfo.clientName}</span>
+            </div>
+          )}
           <div className="flex items-center gap-1">
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusClass}`}>
               {projectInfo.status}
@@ -260,7 +280,7 @@ const ProjectDetail = () => {
               return (
                 <div key={idx} className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium text-gray-700">Role ID: {stat.roleId}</span>
+                    <span className="font-medium text-gray-700">{getRoleName(stat.roleId)}</span>
                     <span className="text-xs bg-white border px-2 py-0.5 rounded-full text-gray-500">
                       {stat.headcount}명
                     </span>
@@ -295,8 +315,9 @@ const ProjectDetail = () => {
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3">직원 ID (Developer ID)</th>
-                <th className="px-6 py-3">역할 ID (Role ID)</th>
+                <th className="px-6 py-3">직원명</th>
+                <th className="px-6 py-3">부서/직급</th>
+                <th className="px-6 py-3">역할</th>
                 <th className="px-6 py-3">투입 기간</th>
                 <th className="px-6 py-3">참여율</th>
               </tr>
@@ -306,9 +327,14 @@ const ProjectDetail = () => {
                 assignments.map((assign, idx) => (
                   <tr key={idx} className="hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-900">
-                      {assign.developerId}
+                      <div>{assign.developerName || `개발자 ${assign.developerId}`}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">ID: {assign.developerId}</div>
                     </td>
-                    <td className="px-6 py-4 text-gray-700">{assign.roleId}</td>
+                    <td className="px-6 py-4 text-gray-700">
+                      <div>{assign.departmentName || "-"}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{assign.positionName || "-"}</div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-700">{getRoleName(assign.roleId)}</td>
                     <td className="px-6 py-4 text-gray-600">
                       {assign.startDate} ~ {assign.endDate}
                     </td>
@@ -319,7 +345,7 @@ const ProjectDetail = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
                     배정된 인원이 없습니다.
                   </td>
                 </tr>

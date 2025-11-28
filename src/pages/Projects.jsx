@@ -237,7 +237,7 @@ const Projects = () => {
               <tr>
                 <th className="px-6 py-3">프로젝트 코드</th>
                 <th className="px-6 py-3">프로젝트명</th>
-                {/* Client column removed as per API limitation */}
+                <th className="px-6 py-3">발주처</th>
                 <th className="px-6 py-3">기간</th>
                 <th className="px-6 py-3">상태</th>
                 <th className="px-6 py-3 text-right">관리</th>
@@ -246,7 +246,7 @@ const Projects = () => {
             <tbody className="divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center gap-2">
                       <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
                       <span>프로젝트 목록을 불러오는 중입니다...</span>
@@ -255,7 +255,7 @@ const Projects = () => {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-red-500">
+                  <td colSpan="6" className="px-6 py-12 text-center text-red-500">
                     {error}
                   </td>
                 </tr>
@@ -281,7 +281,7 @@ const Projects = () => {
                         {project.projectCode}
                       </td>
                       <td className="px-6 py-4 text-gray-900">{project.projectName}</td>
-                      {/* Client column removed */}
+                      <td className="px-6 py-4 text-gray-600">{project.clientName || "-"}</td>
                       <td className="px-6 py-4 text-gray-600">
                         {project.startDate} ~ {displayEnd}
                       </td>
@@ -305,7 +305,7 @@ const Projects = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
                     등록된 프로젝트가 없습니다.
                   </td>
                 </tr>
