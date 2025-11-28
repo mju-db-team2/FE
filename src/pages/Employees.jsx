@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -9,78 +9,14 @@ import {
   Check,
   Briefcase,
   X,
+  Loader2,
 } from "lucide-react";
 
 const Employees = () => {
-  // Mock Data matching EmployeeDetailResponse DTO structure
-  const employeesData = [
-    {
-      empNo: 101,
-      employeeName: "김개발",
-      deptId: 1,
-      positionId: 2,
-      statusId: 1,
-      employeeEmail: "kim.dev@company.com",
-      employeePhone: "010-1111-1111",
-      skills: [
-        { skillId: 1, skillName: "Java", profLevel: 4, expYears: 5, isPrimary: true },
-        { skillId: 2, skillName: "Spring Boot", profLevel: 3, expYears: 3, isPrimary: false },
-        { skillId: 3, skillName: "React", profLevel: 2, expYears: 1, isPrimary: false },
-      ],
-    },
-    {
-      empNo: 102,
-      employeeName: "이피엘",
-      deptId: 1,
-      positionId: 3,
-      statusId: 1,
-      employeeEmail: "lee.pl@company.com",
-      employeePhone: "010-2222-2222",
-      skills: [
-        { skillId: 4, skillName: "Python", profLevel: 5, expYears: 7, isPrimary: true },
-        { skillId: 5, skillName: "Django", profLevel: 4, expYears: 5, isPrimary: false },
-      ],
-    },
-    {
-      empNo: 103,
-      employeeName: "박피엠",
-      deptId: 1,
-      positionId: 4,
-      statusId: 1,
-      employeeEmail: "park.pm@company.com",
-      employeePhone: "010-3333-3333",
-      skills: [
-        { skillId: 6, skillName: "Project Management", profLevel: 5, expYears: 10, isPrimary: true },
-        { skillId: 7, skillName: "JIRA", profLevel: 5, expYears: 8, isPrimary: false },
-      ],
-    },
-    {
-      empNo: 107,
-      employeeName: "한휴직",
-      deptId: 1,
-      positionId: 2,
-      statusId: 2,
-      employeeEmail: "han.leave@company.com",
-      employeePhone: "010-7777-7777",
-      skills: [
-        { skillId: 1, skillName: "Java", profLevel: 3, expYears: 4, isPrimary: true },
-      ],
-    },
-    {
-      empNo: 110,
-      employeeName: "나연구",
-      deptId: 2,
-      positionId: 4,
-      statusId: 3,
-      employeeEmail: "na.rnd@company.com",
-      employeePhone: "010-0101-0101",
-      skills: [
-        { skillId: 4, skillName: "Python", profLevel: 5, expYears: 8, isPrimary: true },
-        { skillId: 8, skillName: "TensorFlow", profLevel: 4, expYears: 6, isPrimary: false },
-        { skillId: 9, skillName: "PyTorch", profLevel: 4, expYears: 5, isPrimary: false },
-      ],
-    },
-  ];
+  // State for API data
+  const [employees, setEmployees] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Helper maps
   const DEPARTMENTS = { 1: "DX솔루션 1팀", 2: "AI 연구소" };
@@ -95,17 +31,74 @@ const Employees = () => {
   // Extract all unique skills for the filter list
   const allSkills = useMemo(() => {
     const skills = new Set();
-    employeesData.forEach((emp) => {
-      emp.skills.forEach((s) => skills.add(s.skillName));
-    });
+    // Add default skills to ensure filter options exist even if employee list is empty or filtered out
+    ["Java", "Python", "Spring Boot", "React", "MySQL", "JPA", "AWS", "Oracle", "JavaScript"].forEach(s => skills.add(s));
+
+    // Robust safety check: ensure employees is an array and each emp has skills
+    if (Array.isArray(employees)) {
+      employees.forEach((emp) => {
+        if (emp && Array.isArray(emp.skills)) {
+          emp.skills.forEach((s) => {
+            if (s && s.skillName) {
+              skills.add(s.skillName);
+            }
+          });
+        }
+      });
+    }
     return Array.from(skills).sort();
-  }, []);
+  }, [employees]);
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSkills, setSelectedSkills] = useState([]); // Multi-select
   const [minExpYears, setMinExpYears] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Fetch Employees from API
+  const fetchEmployees = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // API call to local server
+      // Server requires at least one skill. If none selected, send a default list to get initial data.
+      // Note: Backend uses AND condition, so we must send only ONE skill to get maximum results.
+      // Sending multiple skills (e.g. ["Java", "Python"]) would only return employees who have BOTH.
+      const DEFAULT_SKILLS = ["Java"];
+
+      const response = await fetch("http://localhost:8080/employees/filter", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          skillNames: selectedSkills.length > 0 ? selectedSkills : DEFAULT_SKILLS,
+          minExpYears: minExpYears,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch employees");
+      }
+
+      const data = await response.json();
+      // Handle response structure: check if data is directly an array or wrapped in { data: [...] }
+      const employeeList = Array.isArray(data) ? data : (data.data || []);
+      setEmployees(employeeList);
+    } catch (err) {
+      console.error("Error fetching employees:", err);
+      // If server returns 500 because of empty skills, just show empty list or handle gracefully
+      setError("데이터를 불러오는데 실패했습니다. (서버 응답 오류)");
+      setEmployees([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Initial load and filter change effect
+  useEffect(() => {
+    fetchEmployees();
+  }, [selectedSkills, minExpYears]);
 
   // Toggle skill selection
   const toggleSkill = (skillName) => {
@@ -117,7 +110,6 @@ const Employees = () => {
   };
 
   // Get color intensity based on experience years (GitHub contribution style)
-  // Updated to match "Status" badge aesthetics (rounded-full, font-medium, softer colors)
   const getSkillColorClass = (years) => {
     const baseClasses = "px-2.5 py-1 text-xs font-medium rounded-full border transition-colors";
 
@@ -128,45 +120,23 @@ const Employees = () => {
     return `${baseClasses} bg-gray-50 text-gray-600 border-gray-100`; // Entry
   };
 
-  // Filtering Logic
-  const filteredEmployees = employeesData.filter((emp) => {
-    // 1. Basic Search
+  // Client-side filtering for Search Term (Name, Dept, Email)
+  // The API handles skills and experience, but basic search is often client-side for speed
+  // or can be added to API if supported. Here we filter the *result* from API.
+  const filteredEmployees = (employees || []).filter((emp) => {
+    if (!emp) return false; // Skip null/undefined employees
+
     const deptName = DEPARTMENTS[emp.deptId] || "";
+    // Safety check: emp.employeeName might be null
+    const name = emp.employeeName || "";
+    const email = emp.employeeEmail || "";
+
     const basicMatch =
-      emp.employeeName.includes(searchTerm) ||
+      name.includes(searchTerm) ||
       deptName.includes(searchTerm) ||
-      emp.employeeEmail.includes(searchTerm);
+      email.includes(searchTerm);
 
-    if (!basicMatch) return false;
-
-    // 2. Skill Filter (AND Condition) & Experience Filter
-    if (selectedSkills.length > 0) {
-      // Check if employee has ALL selected skills
-      const hasAllSkills = selectedSkills.every((selectedSkill) => {
-        const empSkill = emp.skills.find(
-          (s) => s.skillName === selectedSkill
-        );
-        // If employee doesn't have the skill, fail
-        if (!empSkill) return false;
-
-        // If employee has the skill, check experience requirement
-        if (minExpYears > 0 && empSkill.expYears < minExpYears) {
-          return false;
-        }
-        return true;
-      });
-
-      if (!hasAllSkills) return false;
-    } else {
-      // If no skill selected but experience filter is set, check if ANY skill meets criteria
-      // (Optional behavior, but logical)
-      if (minExpYears > 0) {
-        const hasAnySkillWithExp = emp.skills.some(s => s.expYears >= minExpYears);
-        if (!hasAnySkillWithExp) return false;
-      }
-    }
-
-    return true;
+    return basicMatch;
   });
 
   return (
@@ -181,6 +151,22 @@ const Employees = () => {
           <span>직원 등록</span>
         </button>
       </div>
+
+      {/* Info Alert for Default Filter */}
+      {selectedSkills.length === 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+          <div className="p-1 bg-blue-100 rounded-full text-blue-600 mt-0.5">
+            <Check size={14} />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-blue-900">추천 인재 목록 (Java)</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              현재 가장 수요가 많은 <strong>Java</strong> 기술 보유 인재를 우선적으로 표시합니다.
+              원하시는 기술 스택이 있다면 필터를 통해 검색해주세요.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {/* Filter Section */}
@@ -205,8 +191,8 @@ const Employees = () => {
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
               className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${isFilterOpen || selectedSkills.length > 0
-                  ? "bg-primary-50 border-primary-200 text-primary-700"
-                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                ? "bg-primary-50 border-primary-200 text-primary-700"
+                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                 }`}
             >
               <Filter size={20} />
@@ -241,8 +227,8 @@ const Employees = () => {
                       key={skill}
                       onClick={() => toggleSkill(skill)}
                       className={`px-3 py-1.5 text-sm rounded-full border transition-all ${selectedSkills.includes(skill)
-                          ? "bg-primary-600 text-white border-primary-600 shadow-sm"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-primary-300 hover:bg-primary-50"
+                        ? "bg-primary-600 text-white border-primary-600 shadow-sm"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-primary-300 hover:bg-primary-50"
                         }`}
                     >
                       {skill}
@@ -298,37 +284,52 @@ const Employees = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredEmployees.length > 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+                      <span>데이터를 불러오는 중입니다...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-12 text-center text-red-500">
+                    {error}
+                  </td>
+                </tr>
+              ) : filteredEmployees.length > 0 ? (
                 filteredEmployees.map((emp) => (
                   <tr key={emp.empNo} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-xs">
-                          {emp.employeeName[0]}
+                          {emp.employeeName?.[0] || "?"}
                         </div>
                         <span className="font-medium text-gray-900">
-                          {emp.employeeName}
+                          {emp.employeeName || "이름없음"}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-600">
                       <div className="flex flex-col">
-                        <span className="text-gray-900 font-medium">{DEPARTMENTS[emp.deptId]}</span>
-                        <span className="text-xs">{POSITIONS[emp.positionId]}</span>
+                        <span className="text-gray-900 font-medium">{DEPARTMENTS[emp.deptId] || "미배정"}</span>
+                        <span className="text-xs">{POSITIONS[emp.positionId] || "직급없음"}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-2 max-w-xs">
-                        {emp.skills.map((skill) => (
+                        {emp.skills?.map((skill, idx) => (
                           <span
-                            key={skill.skillId}
+                            key={idx}
                             className={getSkillColorClass(skill.expYears)}
                             title={`${skill.skillName}: ${skill.expYears}년 경력`}
                           >
                             {skill.skillName}
                           </span>
                         ))}
-                        {emp.skills.length === 0 && (
+                        {(!emp.skills || emp.skills.length === 0) && (
                           <span className="text-gray-400 text-xs">-</span>
                         )}
                       </div>
@@ -336,10 +337,10 @@ const Employees = () => {
                     <td className="px-6 py-4 text-gray-600">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2 text-xs">
-                          <Mail size={12} /> {emp.employeeEmail}
+                          <Mail size={12} /> {emp.employeeEmail || "-"}
                         </div>
                         <div className="flex items-center gap-2 text-xs">
-                          <Phone size={12} /> {emp.employeePhone}
+                          <Phone size={12} /> {emp.employeePhone || "-"}
                         </div>
                       </div>
                     </td>
