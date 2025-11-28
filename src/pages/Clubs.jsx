@@ -1,43 +1,51 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Filter, Plus, MoreVertical } from "lucide-react";
 
 const Clubs = () => {
-  const clubs = [
-    {
-      id: 9001,
-      name: "FE 스터디",
-      leader: "김개발",
-      members: 18,
-      status: "활성",
-      createdAt: "2024-03-01",
-    },
-    {
-      id: 9002,
-      name: "알고리즘 동아리",
-      leader: "이피엘",
-      members: 25,
-      status: "활성",
-      createdAt: "2024-05-12",
-    },
-    {
-      id: 9003,
-      name: "축구 동호회",
-      leader: "박피엠",
-      members: 16,
-      status: "휴면",
-      createdAt: "2023-10-05",
-    },
-    {
-      id: 9004,
-      name: "AI 리서치",
-      leader: "나연구",
-      members: 12,
-      status: "활성",
-      createdAt: "2025-02-10",
-    },
-  ];
+  const [clubs, setClubs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let aborted = false;
+    const fetchClubs = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("http://localhost:8080/clubs", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (!res.ok) {
+          throw new Error(`서버 오류: ${res.status}`);
+        }
+        const data = await res.json();
+        if (aborted) return;
+        // 서버 응답 -> 화면 모델 매핑
+        const mapped = (Array.isArray(data) ? data : []).map((d) => ({
+          id: d.clubId,
+          name: d.clubName,
+          leader: d.leaderName,
+          members: d.memberCount,
+          status: d.clubStatus === "ACTIVE" ? "활성" : "휴면",
+          createdAt: (d.createdAt || "").slice(0, 10),
+        }));
+        setClubs(mapped);
+      } catch (e) {
+        if (!aborted) setError(e.message || "알 수 없는 오류가 발생했습니다.");
+      } finally {
+        if (!aborted) setLoading(false);
+      }
+    };
+    fetchClubs();
+    return () => {
+      aborted = true;
+    };
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -76,53 +84,69 @@ const Clubs = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3">동아리명</th>
-                <th className="px-6 py-3">리더</th>
-                <th className="px-6 py-3">인원</th>
-                <th className="px-6 py-3">상태</th>
-                <th className="px-6 py-3">생성일</th>
-                <th className="px-6 py-3 text-right">관리</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {clubs.map((club) => (
-                <tr
-                  key={club.id}
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => navigate(`/clubs/${club.id}`)}
-                >
-                  <td className="px-6 py-4 font-medium text-gray-900">
-                    {club.name}
-                  </td>
-                  <td className="px-6 py-4 text-gray-700">{club.leader}</td>
-                  <td className="px-6 py-4 text-gray-600">{club.members}명</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        club.status === "활성"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {club.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">{club.createdAt}</td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      className="text-gray-400 hover:text-gray-600"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVertical size={20} />
-                    </button>
-                  </td>
+          {loading ? (
+            <div className="p-6 text-center text-gray-600">불러오는 중...</div>
+          ) : error ? (
+            <div className="p-6 text-center text-red-600">
+              목록을 불러오지 못했어요. {error}
+            </div>
+          ) : clubs.length === 0 ? (
+            <div className="p-6 text-center text-gray-600">
+              데이터가 없습니다.
+            </div>
+          ) : (
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3">동아리명</th>
+                  <th className="px-6 py-3">리더</th>
+                  <th className="px-6 py-3">인원</th>
+                  <th className="px-6 py-3">상태</th>
+                  <th className="px-6 py-3">생성일</th>
+                  <th className="px-6 py-3 text-right">관리</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {clubs.map((club) => (
+                  <tr
+                    key={club.id}
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => navigate(`/clubs/${club.id}`)}
+                  >
+                    <td className="px-6 py-4 font-medium text-gray-900">
+                      {club.name}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700">{club.leader}</td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {club.members}명
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          club.status === "활성"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {club.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {club.createdAt}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        className="text-gray-400 hover:text-gray-600"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical size={20} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

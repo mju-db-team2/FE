@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   Users,
@@ -13,171 +13,108 @@ const ClubDetail = () => {
   const { id } = useParams();
   const clubId = Number(id);
 
-  // Mock base club info (aligned with list)
-  const clubs = useMemo(
-    () => [
-      {
-        id: 9001,
-        name: "FE 스터디",
-        leader: "김개발",
-        members: 18,
-        status: "활성",
-        createdAt: "2024-03-01",
-      },
-      {
-        id: 9002,
-        name: "알고리즘 동아리",
-        leader: "이피엘",
-        members: 25,
-        status: "활성",
-        createdAt: "2024-05-12",
-      },
-      {
-        id: 9003,
-        name: "축구 동호회",
-        leader: "박피엠",
-        members: 16,
-        status: "휴면",
-        createdAt: "2023-10-05",
-      },
-      {
-        id: 9004,
-        name: "AI 리서치",
-        leader: "나연구",
-        members: 12,
-        status: "활성",
-        createdAt: "2025-02-10",
-      },
-    ],
-    []
-  );
+  const formatDateTime = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const pad = (n) => String(n).padStart(2, "0");
+    if (Number.isNaN(d.getTime())) {
+      return iso.replace("T", " ").slice(0, 16);
+    }
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+      d.getDate()
+    )} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
 
-  const club = clubs.find((c) => c.id === clubId);
-
-  // Mock members (from CLUB_ROLE)
-  const membersByClub = useMemo(
-    () => ({
-      9001: [
-        {
-          empId: 101,
-          name: "김개발",
-          role: "동아리장",
-          dept: "DX솔루션 1팀",
-          phone: "010-1111-1111",
-        },
-        {
-          empId: 102,
-          name: "이피엘",
-          role: "부원",
-          dept: "DX솔루션 1팀",
-          phone: "010-2222-2222",
-        },
-        {
-          empId: 103,
-          name: "박피엠",
-          role: "부원",
-          dept: "DX솔루션 1팀",
-          phone: "010-3333-3333",
-        },
-      ],
-      9002: [
-        {
-          empId: 104,
-          name: "최엔지",
-          role: "동아리장",
-          dept: "플랫폼팀",
-          phone: "010-4444-4444",
-        },
-        {
-          empId: 105,
-          name: "정해커",
-          role: "부원",
-          dept: "백엔드팀",
-          phone: "010-5555-5555",
-        },
-      ],
-      9003: [
-        {
-          empId: 106,
-          name: "오수비",
-          role: "동아리장",
-          dept: "인프라팀",
-          phone: "010-6666-6666",
-        },
-      ],
-      9004: [
-        {
-          empId: 110,
-          name: "나연구",
-          role: "동아리장",
-          dept: "AI 연구소",
-          phone: "010-0101-0101",
-        },
-        {
-          empId: 101,
-          name: "김개발",
-          role: "부원",
-          dept: "DX솔루션 1팀",
-          phone: "010-1111-1111",
-        },
-      ],
-    }),
-    []
-  );
-
-  // Mock activities (from CLUB_ACTIVITY) with participants (ACTIVITY_PARTICIPANT)
-  const activitiesByClub = useMemo(
-    () => ({
-      9001: [
-        {
-          activityId: 1,
-          date: "2025-09-10 19:00",
-          location: "세미나실 A",
-          summary: "React 상태 관리 비교: Redux vs Zustand",
-          status: "완료",
-          participants: [101, 102, 103],
-        },
-        {
-          activityId: 2,
-          date: "2025-10-03 19:00",
-          location: "온라인(Google Meet)",
-          summary: "테이블 컴포넌트 접근성 개선 아이디어",
-          status: "진행",
-          participants: [101, 102],
-        },
-      ],
-      9002: [
-        {
-          activityId: 3,
-          date: "2025-09-01 20:00",
-          location: "세미나실 B",
-          summary: "DP/Greedy 실전 문제 풀이",
-          status: "완료",
-          participants: [104, 105],
-        },
-      ],
-      9003: [],
-      9004: [
-        {
-          activityId: 4,
-          date: "2025-11-01 18:30",
-          location: "연구실 402",
-          summary: "LLM Prompt Engineering 실험 공유",
-          status: "진행",
-          participants: [110, 101],
-        },
-      ],
-    }),
-    []
-  );
-
-  const members = membersByClub[clubId] ?? [];
-  const activities = activitiesByClub[clubId] ?? [];
+  const [club, setClub] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [activities, setActivities] = useState([]);
 
   const [expandedActivities, setExpandedActivities] = useState({});
   const toggleActivity = (aid) => {
     setExpandedActivities((prev) => ({ ...prev, [aid]: !prev[aid] }));
   };
+
+  useEffect(() => {
+    let aborted = false;
+    const fetchDetail = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`http://localhost:8080/clubs/${clubId}`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!res.ok) throw new Error(`서버 오류: ${res.status}`);
+        const data = await res.json();
+        if (aborted) return;
+        const mappedClub = {
+          id: data.clubId,
+          name: data.clubName,
+          leader: data.leaderName,
+          membersCount: data.memberCount,
+          status: data.clubStatus === "ACTIVE" ? "활성" : "휴면",
+          createdAt: (data.createdAt || "").slice(0, 10),
+        };
+        const mappedMembers = (data.members || []).map((m) => ({
+          empId: m.empNo,
+          name: m.name,
+          role: m.role === "LEADER" ? "동아리장" : "부원",
+          dept: m.deptName,
+          phone: "-", // API에 번호가 없으므로 기본값
+        }));
+        const mappedActivities = (data.activities || []).map((a) => {
+          const statusLabel =
+            a.status === 2 ? "완료" : a.status === 1 ? "진행" : "대기";
+          const participants = Array.isArray(a.participants)
+            ? a.participants
+                .map((p) => (typeof p === "number" ? p : p.empNo))
+                .filter((v) => typeof v === "number")
+            : [];
+          return {
+            activityId: a.activityId,
+            date: formatDateTime(a.activityDate || a.date),
+            location: a.location,
+            summary: a.summary,
+            status: statusLabel,
+            participants,
+          };
+        });
+        setClub(mappedClub);
+        setMembers(mappedMembers);
+        setActivities(mappedActivities);
+      } catch (e) {
+        if (!aborted) setError(e.message || "알 수 없는 오류가 발생했습니다.");
+      } finally {
+        if (!aborted) setLoading(false);
+      }
+    };
+    fetchDetail();
+    return () => {
+      aborted = true;
+    };
+  }, [clubId]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white p-6 rounded-xl border border-gray-200 text-center text-gray-600">
+          불러오는 중...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white p-6 rounded-xl border border-gray-200 text-center text-red-600">
+          상세 정보를 불러오지 못했어요. {error}
+        </div>
+      </div>
+    );
+  }
 
   if (!club) {
     return (
@@ -209,8 +146,8 @@ const ClubDetail = () => {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">{club.name}</h1>
         <p className="text-gray-500 mt-1">
-          리더 {club.leader} · 구성원 {members.length}명 · 생성일{" "}
-          {club.createdAt}
+          리더 {club.leader} · 구성원 {members.length}명
+          {club.createdAt && <> · 생성일 {club.createdAt}</>}
         </p>
         <div className="mt-3">
           <span
@@ -240,8 +177,7 @@ const ClubDetail = () => {
                 <tr>
                   <th className="px-6 py-3">이름</th>
                   <th className="px-6 py-3">역할</th>
-                  <th className="px-6 py-3">부서</th>
-                  <th className="px-6 py-3">연락처</th>
+                  <th className="px-6 py-3">부서코드</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -252,7 +188,6 @@ const ClubDetail = () => {
                     </td>
                     <td className="px-6 py-4 text-gray-700">{m.role}</td>
                     <td className="px-6 py-4 text-gray-600">{m.dept}</td>
-                    <td className="px-6 py-4 text-gray-600">{m.phone}</td>
                   </tr>
                 ))}
               </tbody>
