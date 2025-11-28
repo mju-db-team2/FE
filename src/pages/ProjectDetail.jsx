@@ -271,11 +271,11 @@ const ProjectDetail = () => {
       </div>
 
       {/* Statistics Section */}
-      {statistics && statistics.roleStats && (
+      {statistics && statistics.roles && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
           <h2 className="text-lg font-bold text-gray-900 mb-4">역할별 투입 현황</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {statistics.roleStats.map((stat, idx) => {
+            {statistics.roles.map((stat, idx) => {
               const avgAllocation = stat.totalAllocation / stat.headcount;
               return (
                 <div key={idx} className="bg-gray-50 p-4 rounded-lg border border-gray-100">
