@@ -418,7 +418,7 @@ const ProjectDetail = () => {
             <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3">직원명</th>
-                <th className="px-6 py-3">부서/직급</th>
+                <th className="px-6 py-3">직급</th>
                 <th className="px-6 py-3">역할</th>
                 <th className="px-6 py-3">투입 기간</th>
                 <th className="px-6 py-3">참여율</th>
@@ -440,10 +440,7 @@ const ProjectDetail = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-700">
-                      <div>{assign.departmentName || "-"}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        {assign.positionName || "-"}
-                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">대리</div>
                     </td>
                     <td className="px-6 py-4 text-gray-700">
                       {getRoleName(assign.roleId)}

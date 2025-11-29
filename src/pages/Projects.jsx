@@ -21,9 +21,10 @@ const Projects = () => {
     []
   );
 
+  // 발주처 관련 로직/데이터 제거됨
+
   // Fetch Projects from API
   // Removed useEffect that contained fetchProjects
-
 
   const filteredProjects = useMemo(() => {
     if (activeTab === "ALL") return projects;
@@ -32,13 +33,11 @@ const Projects = () => {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newProject, setNewProject] = useState({
-    clientId: 201,
-    clientName: "", // Added clientName
     projectCode: "",
     projectName: "",
     startDate: "",
     endDate: "",
-    status: "WAIT"
+    status: "WAIT",
   });
 
   const fetchProjects = async () => {
@@ -83,13 +82,11 @@ const Projects = () => {
       setIsCreateModalOpen(false);
       // Reset form
       setNewProject({
-        clientId: 201,
-        clientName: "",
         projectCode: "",
         projectName: "",
         startDate: "",
         endDate: "",
-        status: "WAIT"
+        status: "WAIT",
       });
     } catch (err) {
       console.error("Error creating project:", err);
@@ -102,11 +99,14 @@ const Projects = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">프로젝트 관리</h1>
-          <p className="text-gray-500">진행 중인 프로젝트 현황을 모니터링합니다.</p>
+          <p className="text-gray-500">
+            진행 중인 프로젝트 현황을 모니터링합니다.
+          </p>
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-600
+          text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
           <Plus size={20} />
           <span>신규 프로젝트</span>
@@ -120,65 +120,84 @@ const Projects = () => {
             <h2 className="text-xl font-bold mb-4">신규 프로젝트 생성</h2>
             <form onSubmit={handleCreateProject} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">프로젝트 코드</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  프로젝트 코드
+                </label>
                 <input
                   type="text"
                   required
                   value={newProject.projectCode}
-                  onChange={(e) => setNewProject({ ...newProject, projectCode: e.target.value })}
+                  onChange={(e) =>
+                    setNewProject({
+                      ...newProject,
+                      projectCode: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border rounded-lg"
                   placeholder="PRJ-XXX-000"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">프로젝트명</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  프로젝트명
+                </label>
                 <input
                   type="text"
                   required
                   value={newProject.projectName}
-                  onChange={(e) => setNewProject({ ...newProject, projectName: e.target.value })}
+                  onChange={(e) =>
+                    setNewProject({
+                      ...newProject,
+                      projectName: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border rounded-lg"
                   placeholder="프로젝트 이름"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">발주처</label>
-                <input
-                  type="text"
-                  required
-                  value={newProject.clientName}
-                  onChange={(e) => setNewProject({ ...newProject, clientName: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="예: 삼성전자"
-                />
-              </div>
+              {/* 발주처 입력 제거 */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">시작일</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    시작일
+                  </label>
                   <input
                     type="date"
                     required
                     value={newProject.startDate}
-                    onChange={(e) => setNewProject({ ...newProject, startDate: e.target.value })}
+                    onChange={(e) =>
+                      setNewProject({
+                        ...newProject,
+                        startDate: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border rounded-lg"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">종료일</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    종료일
+                  </label>
                   <input
                     type="date"
                     required
                     value={newProject.endDate}
-                    onChange={(e) => setNewProject({ ...newProject, endDate: e.target.value })}
+                    onChange={(e) =>
+                      setNewProject({ ...newProject, endDate: e.target.value })
+                    }
                     className="w-full px-3 py-2 border rounded-lg"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">상태</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  상태
+                </label>
                 <select
                   value={newProject.status}
-                  onChange={(e) => setNewProject({ ...newProject, status: e.target.value })}
+                  onChange={(e) =>
+                    setNewProject({ ...newProject, status: e.target.value })
+                  }
                   className="w-full px-3 py-2 border rounded-lg"
                 >
                   <option value="WAIT">대기 (WAIT)</option>
@@ -216,10 +235,11 @@ const Projects = () => {
                   setActiveTab(tab.id);
                   setIsInitialView(false);
                 }}
-                className={`px-6 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.id
-                  ? "border-primary-500 text-primary-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
+                className={`px-6 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? "border-primary-500 text-primary-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
               >
                 {tab.label}
               </button>
@@ -252,7 +272,6 @@ const Projects = () => {
               <tr>
                 <th className="px-6 py-3">프로젝트 코드</th>
                 <th className="px-6 py-3">프로젝트명</th>
-                <th className="px-6 py-3">발주처</th>
                 <th className="px-6 py-3">기간</th>
                 <th className="px-6 py-3">상태</th>
                 <th className="px-6 py-3 text-right">관리</th>
@@ -261,7 +280,10 @@ const Projects = () => {
             <tbody className="divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                  <td
+                    colSpan="5"
+                    className="px-6 py-12 text-center text-gray-500"
+                  >
                     <div className="flex flex-col items-center gap-2">
                       <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
                       <span>프로젝트 목록을 불러오는 중입니다...</span>
@@ -270,7 +292,10 @@ const Projects = () => {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-red-500">
+                  <td
+                    colSpan="5"
+                    className="px-6 py-12 text-center text-red-500"
+                  >
                     {error}
                   </td>
                 </tr>
@@ -284,8 +309,8 @@ const Projects = () => {
                     project.status === "PROGRESS"
                       ? "bg-blue-100 text-blue-700"
                       : project.status === "END"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700";
+                      ? "bg-green-100 text-green-700"
+                      : "bg-yellow-100 text-yellow-700";
                   return (
                     <tr
                       key={project.projectId} // API field is projectId
@@ -295,8 +320,9 @@ const Projects = () => {
                       <td className="px-6 py-4 font-medium text-gray-900">
                         {project.projectCode}
                       </td>
-                      <td className="px-6 py-4 text-gray-900">{project.projectName}</td>
-                      <td className="px-6 py-4 text-gray-600">{project.clientName || "-"}</td>
+                      <td className="px-6 py-4 text-gray-900">
+                        {project.projectName}
+                      </td>
                       <td className="px-6 py-4 text-gray-600">
                         {project.startDate} ~ {displayEnd}
                       </td>
@@ -320,7 +346,10 @@ const Projects = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan="5"
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     등록된 프로젝트가 없습니다.
                   </td>
                 </tr>
