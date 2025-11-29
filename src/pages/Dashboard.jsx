@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Users, Briefcase, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import {
+  Users,
+  Briefcase,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 
 const StatCard = ({ title, value, icon: Icon, color, trend }) => (
   <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
@@ -35,7 +41,9 @@ const Dashboard = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch("http://localhost:8080/api/projects/dashboard");
+        const response = await fetch(
+          "http://localhost:8080/api/projects/dashboard"
+        );
         if (!response.ok) {
           throw new Error("Failed to fetch dashboard stats");
         }
@@ -61,15 +69,15 @@ const Dashboard = () => {
   }
 
   if (error) {
-    return (
-      <div className="p-6 text-center text-red-500">
-        {error}
-      </div>
-    );
+    return <div className="p-6 text-center text-red-500">{error}</div>;
   }
 
   // Fallback if data is missing
-  const projectCountByStatus = stats?.projectCountByStatus || { PROGRESS: 0, WAIT: 0, END: 0 };
+  const projectCountByStatus = stats?.projectCountByStatus || {
+    PROGRESS: 0,
+    WAIT: 0,
+    END: 0,
+  };
   const totalProjects = stats?.totalProjects || 0;
   const totalDevelopers = stats?.totalDevelopers || 0;
 
@@ -85,7 +93,13 @@ const Dashboard = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <StatCard
+          title="전체 프로젝트"
+          value={totalProjects}
+          icon={Briefcase}
+          color="bg-blue-500"
+        />
         <StatCard
           title="진행중 프로젝트"
           value={projectCountByStatus.PROGRESS}
@@ -94,7 +108,7 @@ const Dashboard = () => {
         />
         <StatCard
           title="전체 직원"
-          value={totalDevelopers}
+          value={25}
           icon={Users}
           color="bg-indigo-500"
         />
@@ -119,16 +133,24 @@ const Dashboard = () => {
           </h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <span className="font-medium text-gray-700">진행중 (Progress)</span>
-              <span className="font-bold text-blue-600">{projectCountByStatus.PROGRESS}건</span>
+              <span className="font-medium text-gray-700">
+                진행중 (Progress)
+              </span>
+              <span className="font-bold text-blue-600">
+                {projectCountByStatus.PROGRESS}건
+              </span>
             </div>
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <span className="font-medium text-gray-700">대기중 (Wait)</span>
-              <span className="font-bold text-yellow-600">{projectCountByStatus.WAIT}건</span>
+              <span className="font-bold text-yellow-600">
+                {projectCountByStatus.WAIT}건
+              </span>
             </div>
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <span className="font-medium text-gray-700">종료 (End)</span>
-              <span className="font-bold text-green-600">{projectCountByStatus.END}건</span>
+              <span className="font-bold text-green-600">
+                {projectCountByStatus.END}건
+              </span>
             </div>
           </div>
         </div>
@@ -138,8 +160,10 @@ const Dashboard = () => {
           <div className="flex items-center justify-center h-64 text-gray-400">
             <div className="text-center">
               <Users className="w-12 h-12 mx-auto mb-2 opacity-20" />
-              <p className="text-lg font-medium text-gray-600">총 {totalDevelopers}명의 개발자</p>
-              <p className="text-sm">현재 시스템에 등록된 전체 인원입니다.</p>
+              <p className="text-lg font-medium text-gray-600">
+                총 {totalDevelopers}명의 개발자
+              </p>
+              <p className="text-sm">프로젝트에 투입중인 인원입니다.</p>
             </div>
           </div>
         </div>

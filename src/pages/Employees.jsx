@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Search,
   Filter,
@@ -18,8 +18,18 @@ const Employees = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Pagination
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(1);
+
   // Helper maps
-  const DEPARTMENTS = { 1: "DX솔루션 1팀", 2: "AI 연구소" };
+  const DEPARTMENTS = {
+    10: "DX솔루션 1팀",
+    20: "AI 연구소",
+    30: "DX솔루션 2팀",
+    40: "DX솔루션 3팀",
+    50: "DX솔루션 4팀",
+  };
   const POSITIONS = { 1: "사원", 2: "대리", 3: "과장", 4: "팀장" };
   const STATUSES = { 1: "재직", 2: "휴직", 3: "퇴사" };
   const STATUS_STYLES = {
@@ -32,7 +42,48 @@ const Employees = () => {
   const allSkills = useMemo(() => {
     const skills = new Set();
     // Add default skills to ensure filter options exist even if employee list is empty or filtered out
-    ["Java", "Python", "Spring Boot", "React", "MySQL", "JPA", "AWS", "Oracle", "JavaScript"].forEach(s => skills.add(s));
+    [
+      "Java",
+      "Python",
+      "JavaScript",
+      "TypeScript",
+      "C++",
+      "Go",
+      "Kotlin",
+      "Spring Boot",
+      "React",
+      "Vue.js",
+      "Angular",
+      "Django",
+      "Flask",
+      "Node.js",
+      "Express",
+      "MySQL",
+      "PostgreSQL",
+      "Oracle",
+      "MongoDB",
+      "Redis",
+      "Elasticsearch",
+      "AWS",
+      "Docker",
+      "Kubernetes",
+      "Jenkins",
+      "GitLab CI",
+      "Terraform",
+      "Android",
+      "iOS",
+      "React Native",
+      "Flutter",
+      "Git",
+      "JIRA",
+      "Confluence",
+      "MyBatis",
+      "JPA",
+      "Hibernate",
+      "GraphQL",
+      "REST API",
+      "Microservices",
+    ].forEach((s) => skills.add(s));
 
     // Robust safety check: ensure employees is an array and each emp has skills
     if (Array.isArray(employees)) {
@@ -56,7 +107,7 @@ const Employees = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Fetch Employees from API
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -72,7 +123,8 @@ const Employees = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          skillNames: selectedSkills.length > 0 ? selectedSkills : DEFAULT_SKILLS,
+          skillNames:
+            selectedSkills.length > 0 ? selectedSkills : DEFAULT_SKILLS,
           minExpYears: minExpYears,
         }),
       });
@@ -83,7 +135,7 @@ const Employees = () => {
 
       const data = await response.json();
       // Handle response structure: check if data is directly an array or wrapped in { data: [...] }
-      const employeeList = Array.isArray(data) ? data : (data.data || []);
+      const employeeList = Array.isArray(data) ? data : data.data || [];
       setEmployees(employeeList);
     } catch (err) {
       console.error("Error fetching employees:", err);
@@ -93,12 +145,12 @@ const Employees = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedSkills, minExpYears]);
 
   // Initial load and filter change effect
   useEffect(() => {
     fetchEmployees();
-  }, [selectedSkills, minExpYears]);
+  }, [fetchEmployees]);
 
   // Toggle skill selection
   const toggleSkill = (skillName) => {
@@ -111,12 +163,17 @@ const Employees = () => {
 
   // Get color intensity based on experience years (GitHub contribution style)
   const getSkillColorClass = (years) => {
-    const baseClasses = "px-2.5 py-1 text-xs font-medium rounded-full border transition-colors";
+    const baseClasses =
+      "px-2.5 py-1 text-xs font-medium rounded-full border transition-colors";
 
-    if (years >= 10) return `${baseClasses} bg-indigo-100 text-indigo-800 border-indigo-200`; // Expert
-    if (years >= 6) return `${baseClasses} bg-blue-100 text-blue-800 border-blue-200`; // Senior
-    if (years >= 3) return `${baseClasses} bg-sky-100 text-sky-800 border-sky-200`; // Mid
-    if (years >= 1) return `${baseClasses} bg-slate-100 text-slate-700 border-slate-200`; // Junior
+    if (years >= 10)
+      return `${baseClasses} bg-indigo-100 text-indigo-800 border-indigo-200`; // Expert
+    if (years >= 6)
+      return `${baseClasses} bg-blue-100 text-blue-800 border-blue-200`; // Senior
+    if (years >= 3)
+      return `${baseClasses} bg-sky-100 text-sky-800 border-sky-200`; // Mid
+    if (years >= 1)
+      return `${baseClasses} bg-slate-100 text-slate-700 border-slate-200`; // Junior
     return `${baseClasses} bg-gray-50 text-gray-600 border-gray-100`; // Entry
   };
 
@@ -139,6 +196,24 @@ const Employees = () => {
     return basicMatch;
   });
 
+  // Pagination derived values
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredEmployees.length / PAGE_SIZE)
+  );
+  const currentPageEmployees = filteredEmployees.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
+
+  // Reset or clamp page when filters or data change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, selectedSkills, minExpYears]);
+  useEffect(() => {
+    if (page > totalPages) setPage(1);
+  }, [filteredEmployees.length, totalPages, page]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -159,10 +234,13 @@ const Employees = () => {
             <Check size={14} />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-blue-900">추천 인재 목록 (Java)</h3>
+            <h3 className="text-sm font-medium text-blue-900">
+              추천 인재 목록 (Java)
+            </h3>
             <p className="text-sm text-blue-700 mt-1">
-              현재 가장 수요가 많은 <strong>Java</strong> 기술 보유 인재를 우선적으로 표시합니다.
-              원하시는 기술 스택이 있다면 필터를 통해 검색해주세요.
+              현재 가장 수요가 많은 <strong>Java</strong> 기술 보유 인재를
+              우선적으로 표시합니다. 원하시는 기술 스택이 있다면 필터를 통해
+              검색해주세요.
             </p>
           </div>
         </div>
@@ -190,10 +268,11 @@ const Employees = () => {
             {/* Filter Toggle Button */}
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${isFilterOpen || selectedSkills.length > 0
-                ? "bg-primary-50 border-primary-200 text-primary-700"
-                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                }`}
+              className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
+                isFilterOpen || selectedSkills.length > 0
+                  ? "bg-primary-50 border-primary-200 text-primary-700"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+              }`}
             >
               <Filter size={20} />
               <span>기술 필터</span>
@@ -211,7 +290,9 @@ const Employees = () => {
               {/* Skill Selection */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-700">보유 기술 선택 (다중 선택 가능)</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    보유 기술 선택 (다중 선택 가능)
+                  </span>
                   {selectedSkills.length > 0 && (
                     <button
                       onClick={() => setSelectedSkills([])}
@@ -226,13 +307,16 @@ const Employees = () => {
                     <button
                       key={skill}
                       onClick={() => toggleSkill(skill)}
-                      className={`px-3 py-1.5 text-sm rounded-full border transition-all ${selectedSkills.includes(skill)
-                        ? "bg-primary-600 text-white border-primary-600 shadow-sm"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-primary-300 hover:bg-primary-50"
-                        }`}
+                      className={`px-3 py-1.5 text-sm rounded-full border transition-all ${
+                        selectedSkills.includes(skill)
+                          ? "bg-primary-600 text-white border-primary-600 shadow-sm"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-primary-300 hover:bg-primary-50"
+                      }`}
                     >
                       {skill}
-                      {selectedSkills.includes(skill) && <Check size={12} className="inline ml-1" />}
+                      {selectedSkills.includes(skill) && (
+                        <Check size={12} className="inline ml-1" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -245,9 +329,7 @@ const Employees = () => {
                   <span className="text-sm font-medium">최소 경력</span>
                 </div>
                 <div className="flex-1 relative h-6 flex items-center">
-                  <div
-                    className="absolute w-full h-2 rounded-lg bg-gradient-to-r from-gray-200 via-primary-300 to-indigo-600"
-                  ></div>
+                  <div className="absolute w-full h-2 rounded-lg bg-gradient-to-r from-gray-200 via-primary-300 to-indigo-600"></div>
                   <input
                     type="range"
                     min="0"
@@ -259,11 +341,21 @@ const Employees = () => {
                   />
                   <div
                     className="absolute h-4 w-4 bg-white border-2 border-primary-600 rounded-full shadow-md pointer-events-none transition-all"
-                    style={{ left: `${(minExpYears / 10) * 100}%`, transform: `translateX(-${(minExpYears / 10) * 100}%)` }}
+                    style={{
+                      left: `${(minExpYears / 10) * 100}%`,
+                      transform: `translateX(-${(minExpYears / 10) * 100}%)`,
+                    }}
                   ></div>
                 </div>
-                <span className={`text-sm font-bold min-w-[60px] text-right transition-colors ${minExpYears >= 6 ? "text-indigo-800" : minExpYears >= 3 ? "text-primary-600" : "text-gray-500"
-                  }`}>
+                <span
+                  className={`text-sm font-bold min-w-[60px] text-right transition-colors ${
+                    minExpYears >= 6
+                      ? "text-indigo-800"
+                      : minExpYears >= 3
+                      ? "text-primary-600"
+                      : "text-gray-500"
+                  }`}
+                >
                   {minExpYears}년 +
                 </span>
               </div>
@@ -286,7 +378,10 @@ const Employees = () => {
             <tbody className="divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                  <td
+                    colSpan="6"
+                    className="px-6 py-12 text-center text-gray-500"
+                  >
                     <div className="flex flex-col items-center gap-2">
                       <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
                       <span>데이터를 불러오는 중입니다...</span>
@@ -295,12 +390,15 @@ const Employees = () => {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-red-500">
+                  <td
+                    colSpan="6"
+                    className="px-6 py-12 text-center text-red-500"
+                  >
                     {error}
                   </td>
                 </tr>
               ) : filteredEmployees.length > 0 ? (
-                filteredEmployees.map((emp) => (
+                currentPageEmployees.map((emp) => (
                   <tr key={emp.empNo} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -314,8 +412,12 @@ const Employees = () => {
                     </td>
                     <td className="px-6 py-4 text-gray-600">
                       <div className="flex flex-col">
-                        <span className="text-gray-900 font-medium">{DEPARTMENTS[emp.deptId] || "미배정"}</span>
-                        <span className="text-xs">{POSITIONS[emp.positionId] || "직급없음"}</span>
+                        <span className="text-gray-900 font-medium">
+                          {DEPARTMENTS[emp.deptId] || "DX솔루션 1팀"}
+                        </span>
+                        <span className="text-xs">
+                          {POSITIONS[emp.positionId] || "직급없음"}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -346,8 +448,10 @@ const Employees = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS_STYLES[emp.statusId] || "bg-gray-100 text-gray-700"
-                          }`}
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          STATUS_STYLES[emp.statusId] ||
+                          "bg-gray-100 text-gray-700"
+                        }`}
                       >
                         {STATUSES[emp.statusId] || "미정"}
                       </span>
@@ -361,7 +465,10 @@ const Employees = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan="6"
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     검색 조건에 맞는 직원이 없습니다.
                   </td>
                 </tr>
@@ -369,6 +476,30 @@ const Employees = () => {
             </tbody>
           </table>
         </div>
+        {/* Pagination Footer */}
+        {!isLoading && !error && filteredEmployees.length > 0 && (
+          <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              총 {filteredEmployees.length}명 · {page}/{totalPages}페이지
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                className="px-3 py-1 rounded-lg border border-gray-300 text-sm disabled:opacity-40 bg-white hover:bg-gray-50"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                이전
+              </button>
+              <button
+                className="px-3 py-1 rounded-lg border border-gray-300 text-sm disabled:opacity-40 bg-white hover:bg-gray-50"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                다음
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -31,6 +31,9 @@ const ClubDetail = () => {
   const [error, setError] = useState(null);
   const [activities, setActivities] = useState([]);
 
+  const MEMBERS_PAGE_SIZE = 10;
+  const [memberPage, setMemberPage] = useState(1);
+
   const [expandedActivities, setExpandedActivities] = useState({});
   const toggleActivity = (aid) => {
     setExpandedActivities((prev) => ({ ...prev, [aid]: !prev[aid] }));
@@ -95,6 +98,17 @@ const ClubDetail = () => {
       aborted = true;
     };
   }, [clubId]);
+
+  // 멤버 수가 바뀌면 페이지 보정
+  const totalMemberPages = Math.max(
+    1,
+    Math.ceil(members.length / MEMBERS_PAGE_SIZE)
+  );
+  useEffect(() => {
+    if (memberPage > totalMemberPages) {
+      setMemberPage(1);
+    }
+  }, [members.length, totalMemberPages, memberPage]);
 
   if (loading) {
     return (
@@ -181,17 +195,45 @@ const ClubDetail = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {members.map((m) => (
-                  <tr key={m.empId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-900">
-                      {m.name}
-                    </td>
-                    <td className="px-6 py-4 text-gray-700">{m.role}</td>
-                    <td className="px-6 py-4 text-gray-600">{m.dept}</td>
-                  </tr>
-                ))}
+                {members
+                  .slice(
+                    (memberPage - 1) * MEMBERS_PAGE_SIZE,
+                    memberPage * MEMBERS_PAGE_SIZE
+                  )
+                  .map((m) => (
+                    <tr key={m.empId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 font-medium text-gray-900">
+                        {m.name}
+                      </td>
+                      <td className="px-6 py-4 text-gray-700">{m.role}</td>
+                      <td className="px-6 py-4 text-gray-600">{m.dept}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
+          </div>
+          <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              총 {members.length}명 · {memberPage}/{totalMemberPages}페이지
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                className="px-3 py-1 rounded-lg border border-gray-300 text-sm disabled:opacity-40 bg-white hover:bg-gray-50"
+                disabled={memberPage <= 1}
+                onClick={() => setMemberPage((p) => Math.max(1, p - 1))}
+              >
+                이전
+              </button>
+              <button
+                className="px-3 py-1 rounded-lg border border-gray-300 text-sm disabled:opacity-40 bg-white hover:bg-gray-50"
+                disabled={memberPage >= totalMemberPages}
+                onClick={() =>
+                  setMemberPage((p) => Math.min(totalMemberPages, p + 1))
+                }
+              >
+                다음
+              </button>
+            </div>
           </div>
         </div>
 
